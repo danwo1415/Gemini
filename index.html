@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社会事件与舆情监测看板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .status-badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600; }
+        .st-1 { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+        .st-2 { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); }
+        .st-3 { background: rgba(225,29,72,0.2); color: #fda4af; border: 1px solid rgba(225,29,72,0.4); }
+        .st-4 { background: rgba(234,179,8,0.2); color: #fde047; border: 1px solid rgba(234,179,8,0.4); }
+        .st-5 { background: rgba(220,38,38,0.2); color: #fca5a5; border: 1px solid rgba(220,38,38,0.4); }
+        .st-6 { background: rgba(153,27,27,0.25); color: #f87171; border: 1px solid rgba(153,27,27,0.5); }
+        .st-7 { background: rgba(126,34,206,0.25); color: #e9d5ff; border: 1px solid rgba(126,34,206,0.5); }
+        .st-8 { background: rgba(107,114,128,0.2); color: #d1d5db; border: 1px solid rgba(107,114,128,0.4); }
+        .st-9 { background: rgba(14,165,233,0.2); color: #38bdf8; border: 1px solid rgba(14,165,233,0.4); }
+        .st-10 { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+    <header class="glass-panel sticky top-0 z-40 px-6 py-4 border-b border-slate-700/50 mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid font-bold text-red-500 text-2xl fa-shield-halved"></i>
+                <h1 class="text-xl font-bold tracking-wide">社会事件与舆情监测看板</h1>
+            </div>
+            <div class="w-full md:w-96 relative">
+                <input type="text" id="searchInput" placeholder="搜索标题、城市、关键字..." 
+                       class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400 text-sm"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-6">
+        <!-- KPI Dashboard -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6" id="kpiStats"></div>
+
+        <!-- Filter Controls -->
+        <div class="glass-panel p-4 rounded-xl mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-wrap gap-2" id="categoryFilters"></div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-400">省份:</label>
+                <select id="provinceSelect" class="bg-slate-800 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300">
+                    <option value="ALL">全部省份</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Event Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="eventsGrid"></div>
+    </main>
+
+    <script>
+        const eventsData = [
+            {
+                id: "EVT-2026-001",
+                title: "某地某科技企业强行推行996且恶意扣除员工绩效",
+                category: "剥削员工",
+                province: "广东",
+                city: "深圳",
+                status: "官方捂嘴压制",
+                date: "2026-10-10",
+                summary: "多名员工在社交平台爆料公司不给加班费并单方面更改绩效考核标准，相关话题随后在全网被清空。",
+                details: "员工代表联合向劳动监察部门举报，但网络讨论帖在数小时内被删除，发帖账号均被封禁。"
+            },
+            {
+                id: "EVT-2026-002",
+                title: "某市集中采买过期调味品进入中小学食堂事件",
+                category: "食品安全",
+                province: "浙江",
+                city: "杭州",
+                status: "官方被动反转",
+                date: "2026-10-08",
+                summary: "家长现场拍下过期食品包装，市市场监管部门最初回应无问题，省监管组介入后立案逮捕负责人。",
+                details: "初次通报称样品合格引发群众强烈抗议，省联合调查组介入后撤销原通报并问责7名官员。"
+            },
+            {
+                id: "EVT-2026-003",
+                title: "某县执法人员暴力扣押农户自产农产品引发冲突",
+                category: "暴力执法",
+                province: "河南",
+                city: "郑州",
+                status: "官方颠倒黑白",
+                date: "2026-10-05",
+                summary: "现场视频显示执法人员先殴打农户，但官方通报声称系农户暴力抗法致执法人员受伤。",
+                details: "通报结论与多角度现场群众拍摄录像存在根本矛盾，公众对官方通报提出严重质疑。"
+            },
+            {
+                id: "EVT-2026-004",
+                title: "某局高管因涉嫌严重违纪违法被内部举报",
+                category: "贪污腐败",
+                province: "四川",
+                city: "成都",
+                status: "官方承认错误",
+                date: "2026-09-28",
+                summary: "官方发布纪律审查通报，承认监管失职，撤销相关干部职务并移送司法机关。",
+                details: "纪委监委发布正式问责公告，承认此前内部审核机制存在重大漏洞。"
+            }
+        ];
+
+        const statusClassMap = {
+            "舆情发酵中": "st-1", "官方尚未回应": "st-2", "官方捂嘴压制": "st-3",
+            "官方搪塞回应": "st-4", "官方拒绝承认": "st-5", "官方颠倒黑白": "st-6",
+            "官方倒打一耙": "st-7", "官方不了了之": "st-8", "官方被动反转": "st-9",
+            "官方承认错误": "st-10"
+        };
+
+        let currentCategory = "ALL";
+        let currentProvince = "ALL";
+        let searchQuery = "";
+
+        function render() {
+            const categories = ["ALL", "食品安全", "贪污腐败", "暴力执法", "政府公信力", "官员桃色", "恶性社会事件", "剥削员工"];
+            const catContainer = document.getElementById('categoryFilters');
+            catContainer.innerHTML = categories.map(cat => 
+                `<button onclick="setCategory('${cat}')" class="px-3 py-1 rounded-lg text-xs font-medium transition ${currentCategory === cat ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}">${cat === 'ALL' ? '全部分类' : cat}</button>`
+            ).join('');
+
+            const filtered = eventsData.filter(e => {
+                const matchCat = currentCategory === "ALL" || e.category === currentCategory;
+                const matchProv = currentProvince === "ALL" || e.province === currentProvince;
+                const matchSearch = !searchQuery || e.title.includes(searchQuery) || e.summary.includes(searchQuery) || e.city.includes(searchQuery);
+                return matchCat && matchProv && matchSearch;
+            });
+
+            const grid = document.getElementById('eventsGrid');
+            grid.innerHTML = filtered.map(e => `
+                <div class="glass-panel p-5 rounded-xl border border-slate-700/60 flex flex-col justify-between hover:border-slate-500 transition">
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-blue-400 font-mono">${e.province} · ${e.city}</span>
+                            <span class="status-badge ${statusClassMap[e.status] || 'st-8'}">${e.status}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-100 text-base mb-2 hover:text-blue-400 transition cursor-pointer">${e.title}</h3>
+                        <p class="text-slate-400 text-xs mb-4 line-clamp-3">${e.summary}</p>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800 pt-3">
+                        <span><i class="fa-regular fa-folder mr-1"></i>${e.category}</span>
+                        <span><i class="fa-regular fa-calendar mr-1"></i>${e.date}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update stats
+            document.getElementById('kpiStats').innerHTML = `
+                <div class="glass-panel p-3 rounded-lg text-center"><div class="text-xs text-slate-400">总事件数</div><div class="text-xl font-bold text-white">${eventsData.length}</div></div>
+                <div class="glass-panel p-3 rounded-lg text-center"><div class="text-xs text-slate-400">剥削员工</div><div class="text-xl font-bold text-amber-400">${eventsData.filter(x=>x.category==='剥削员工').length}</div></div>
+                <div class="glass-panel p-3 rounded-lg text-center"><div class="text-xs text-slate-400">捂嘴/封堵</div><div class="text-xl font-bold text-rose-400">${eventsData.filter(x=>x.status==='官方捂嘴压制').length}</div></div>
+                <div class="glass-panel p-3 rounded-lg text-center"><div class="text-xs text-slate-400">被动反转</div><div class="text-xl font-bold text-sky-400">${eventsData.filter(x=>x.status==='官方被动反转').length}</div></div>
+                <div class="glass-panel p-3 rounded-lg text-center"><div class="text-xs text-slate-400">承认错误</div><div class="text-xl font-bold text-emerald-400">${eventsData.filter(x=>x.status==='官方承认错误').length}</div></div>
+            `;
+        }
+
+        function setCategory(cat) { currentCategory = cat; render(); }
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            render();
+        });
+
+        // Initialize Provinces
+        const provinces = [...new Set(eventsData.map(e => e.province))];
+        const provSelect = document.getElementById('provinceSelect');
+        provinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p; opt.textContent = p;
+            provSelect.appendChild(opt);
+        });
+        provSelect.addEventListener('change', (e) => { currentProvince = e.target.value; render(); });
+
+        render();
+    </script>
+</body>
+</html>
